@@ -70,10 +70,10 @@ io.on("connection", (socket) => {
    socket.on("stop-game", () => {
       clearInterval(fruitInterval);
    });
-   // socket.on("reset-scores", () => {
-   //    game.clearScores();
-   //    io.emit("bootstrap", game);
-   // });
+   socket.on("reset-scores", () => {
+      game.clearScores();
+      io.emit("bootstrap", game);
+   });
 });
 
 serverHttp.listen(process.env.PORT || 3000, () => {

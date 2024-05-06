@@ -83,12 +83,17 @@
    </style>
    <body>
       <canvas id="game-canvas"></canvas>
-      <canvas id="score-table"></canvas>
+      <table id="score-table"></table>
       <div id="admin">
-         <input type="number" id="interval" placeholder="set Interval" value="2000" /><br>
-         <button onclick="startGame()">Start Game</button><br>
-         <button onclick="stopGame()">Stop Game</button><br>
-         <button onclick="resetScores()">Reset Scores</button><br>
+         <input
+            type="number"
+            id="interval"
+            placeholder="set Interval"
+            value="2000"
+         /><br />
+         <button onclick="startGame()">Start Game</button><br />
+         <button onclick="stopGame()">Stop Game</button><br />
+         <button onclick="resetScores()">Reset Scores</button><br />
       </div>
 
       <script src="socket.io/socket.io.js"></script>
@@ -149,18 +154,21 @@
 
                requestAnimationFrame(renderGame);
             }
+            updateScoreTable();
          });
 
-         socket.on("player-update", ({socketId, newState}) => {
+         socket.on("player-update", ({ socketId, newState }) => {
             game.players[socketId] = newState;
          });
 
          socket.on("score-player-update", (score) => {
             game.players[socketId].score = score;
+            updateScoreTable();
          });
 
          socket.on("player-remove", (playerId) => {
             delete game.players[playerId];
+            updateScoreTable();
          });
 
          socket.on("add-fruit", (fruit) => {
@@ -172,41 +180,128 @@
 
          socket.on("fruit-remove", (fruitId) => {
             delete game.fruits[fruitId];
+            updateScoreTable();
          });
          socket.on("current-players", (currentPlayers) => {
-            totalPayersCount = currentPlayers;
+            totalPlayersCount = currentPlayers;
          });
+
+         function updateScoreTable() {
+            const maxResults = 10;
+
+            let scoreTableInnerHTML = `
+                    <tr class="header">
+                        <td>Top 10 Jogadores</td>
+                        <td>Pontos</td>
+                    </tr>
+                `;
+            const scoreArray = [];
+
+            for (socketId in game.players) {
+               const player = game.players[socketId];
+               scoreArray.push({
+                  socketId: socketId,
+                  score: player.score,
+               });
+            }
+
+            const scoreArraySorted = scoreArray.sort((first, second) => {
+               if (first.score < second.score) {
+                  return 1;
+               }
+
+               if (first.score > second.score) {
+                  return -1;
+               }
+
+               return 0;
+            });
+
+            const scoreSliced = scoreArraySorted.slice(0, maxResults);
+
+            scoreSliced.forEach((score) => {
+               scoreTableInnerHTML += `
+                        <tr class="${
+                           socket.id === score.socketId ? "current-player" : ""
+                        }">
+                            <td class="socket-id">${score.socketId}</td>
+                            <td class="score-value">${score.score}</td>
+                        </tr>
+                    `;
+            });
+
+            let playerNotInTop10 = true;
+
+            for (const score of scoreSliced) {
+               if (socket.id === score.socketId) {
+                  playerNotInTop10 = false;
+                  break;
+               }
+
+               playerNotInTop10 = true;
+            }
+
+            if (playerNotInTop10) {
+               scoreTableInnerHTML += `
+                        <tr class="current-player bottom">
+                            <td class="socket-id">${socket.id}</td>
+                            <td class="score-value">${
+                               game.players[socket.id].score
+                            }</td>
+                        </tr>
+                    `;
+            }
+
+            scoreTableInnerHTML += `
+                    <tr class="footer">
+                        <td>Total de jogadores</td>
+                        <td align="right">${totalPlayersCount}</td>
+                    </tr>
+                `;
+            scoreTable.innerHTML = scoreTableInnerHTML;
+         }
 
          function handleKeydown(e) {
             if (connected) {
                console.log(game.players);
                const player = game.players[socket.id];
-               if ((e.key === 'w' || e.code === "ArrowUp") && player.y-1 >= 0) {
+               if (
+                  (e.key === "w" || e.code === "ArrowUp") &&
+                  player.y - 1 >= 0
+               ) {
                   player.y -= 1;
                   socket.emit("player-move", "up");
                   return;
                }
 
-               if ((e.key === 's' || e.code === "ArrowDown")  && player.y+1 < game.canvasHeight) {
+               if (
+                  (e.key === "s" || e.code === "ArrowDown") &&
+                  player.y + 1 < game.canvasHeight
+               ) {
                   player.y += 1;
                   socket.emit("player-move", "down");
                   return;
                }
 
-               if ((e.key === 'a' || e.code === "ArrowLeft") && player.x-1 >= 0) {
+               if (
+                  (e.key === "a" || e.code === "ArrowLeft") &&
+                  player.x - 1 >= 0
+               ) {
                   player.x -= 1;
                   socket.emit("player-move", "left");
                   return;
                }
 
-               if ((e.key === 'd' || e.code === "ArrowRight") && player.x+1 < game.canvasWidth) {
+               if (
+                  (e.key === "d" || e.code === "ArrowRight") &&
+                  player.x + 1 < game.canvasWidth
+               ) {
                   player.x += 1;
                   socket.emit("player-move", "right");
                   return;
                }
             }
          }
-
 
          function throttle(callback, delay) {
             let isThrottled = false,
@@ -237,18 +332,18 @@
 
          const throttledKeydown = throttle(handleKeydown, 80);
 
-         document.addEventListener("keydown", throttledKeydown);      
-         
+         document.addEventListener("keydown", throttledKeydown);
+
          // ADMIN
          function startGame() {
             const interval = document.getElementById("interval").value;
-            socket.emit('start-game', interval);
+            socket.emit("start-game", interval);
          }
          function stopGame() {
-            socket.emit('stop-game')
+            socket.emit("stop-game");
          }
          function resetScores() {
-            socke.emit('reset-scores')
+            socket.emit("reset-scores");
          }
       </script>
    </body>
