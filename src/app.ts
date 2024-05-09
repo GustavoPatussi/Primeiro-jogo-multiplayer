@@ -23,12 +23,21 @@ app.get(
 );
 
 setInterval(() => {
-   io.emit("concurrent-players", io.engine.clientsCount);
-}, 5000);
+   io.emit("current-players", io.engine.clientsCount);
+}, 1000);
 
 io.on("connection", (socket) => {
+   
    const playerState = game.addPlayer(socket.id);
    socket.emit("bootstrap", game);
+   socket.on('alterar-nome', (playerName) => {
+      game.players[socket.id].name = playerName;
+      socket.broadcast.emit("player-update", {
+         socketId: socket.id,
+         newState: game.players[socket.id],
+      })
+      socket.emit("update-name", playerName);
+   })
 
    socket.broadcast.emit("player-update", {
       socketId: socket.id,

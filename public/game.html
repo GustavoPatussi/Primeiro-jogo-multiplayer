@@ -68,15 +68,27 @@
          #score-table .current-player .score-value {
             color: #bdaa27;
          }
+         div{
+            margin-bottom: 20px;
+         } 
+         div button {
+            width: 120px;
+            height: 30px;
+            text-align: center;
+            margin-bottom: 10px;
+         }
       </style>
    </head>
    <body>
       <canvas id="game-canvas"></canvas>
       <table id="score-table"></table>
-
+      <div>
+         <button onclick="alterarNome()">Alterar nome</button>
+      </div>
       <script src="socket.io/socket.io.js"></script>
       <script>
          const socket = io();
+         let playerName;
          let connected = false;
          let game;
          const gameCanvas = document.getElementById("game-canvas");
@@ -147,6 +159,7 @@
 
          socket.on("player-remove", (playerId) => {
             delete game.players[playerId];
+            updateScoreTable();
          });
 
          socket.on("add-fruit", (fruit) => {
@@ -164,6 +177,11 @@
             totalPlayersCount = currentPlayers;
             updateScoreTable();
          });
+
+         socket.on("update-name", (name) => {
+            game.players[socket.id].name = name;
+            updateScoreTable();
+         })
 
          function handleKeydown(e) {
             if (connected) {
@@ -221,6 +239,7 @@
             for (socketId in game.players) {
                const player = game.players[socketId];
                scoreArray.push({
+                  name: player.name,
                   socketId: socketId,
                   score: player.score,
                });
@@ -245,7 +264,7 @@
                         <tr class="${
                            socket.id === score.socketId ? "current-player" : ""
                         }">
-                            <td class="socket-id">${score.socketId}</td>
+                            <td class="socket-id">${score.name}</td>
                             <td class="score-value">${score.score}</td>
                         </tr>
                     `;
@@ -265,7 +284,7 @@
             if (playerNotInTop10) {
                scoreTableInnerHTML += `
                         <tr class="current-player bottom">
-                            <td class="socket-id">${socket.id}</td>
+                            <td class="socket-id">${game.players[socket.id].name}</td>
                             <td class="score-value">${
                                game.players[socket.id].score
                             }</td>
@@ -312,6 +331,12 @@
          const throttledKeydown = throttle(handleKeydown, 80);
 
          document.addEventListener("keydown", throttledKeydown);
+
+
+         function alterarNome() {
+            const nome = prompt("Qual seu nome?");
+            socket.emit("alterar-nome", nome);
+         }
       </script>
    </body>
 </html>

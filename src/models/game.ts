@@ -1,4 +1,5 @@
 export type player = {
+    name: string,
     x: number,
     y: number,
     score: number

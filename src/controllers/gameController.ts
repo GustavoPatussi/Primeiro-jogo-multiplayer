@@ -28,6 +28,7 @@ export class CreateGame implements game {
 
     addPlayer(socketId: string): player {
         return this.players[socketId] = {
+            name: socketId,
             x: Math.floor(Math.random() * this.canvasWidth),
             y: Math.floor(Math.random() * this.canvasHeight),
             score: 0
