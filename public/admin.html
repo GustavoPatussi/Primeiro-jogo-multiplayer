@@ -85,6 +85,7 @@
       <canvas id="game-canvas"></canvas>
       <table id="score-table"></table>
       <div id="admin">
+         <button onclick="alterarNome()">Alterar nome</button> <br>
          <input
             type="number"
             id="interval"
@@ -184,7 +185,12 @@
          });
          socket.on("current-players", (currentPlayers) => {
             totalPlayersCount = currentPlayers;
+            updateScoreTable();
          });
+         socket.on("update-name", (name) => {
+            game.players[socket.id].name = name;
+            updateScoreTable();
+         })
 
          function updateScoreTable() {
             const maxResults = 10;
@@ -200,6 +206,7 @@
             for (socketId in game.players) {
                const player = game.players[socketId];
                scoreArray.push({
+                  name: player.name,
                   socketId: socketId,
                   score: player.score,
                });
@@ -224,7 +231,7 @@
                         <tr class="${
                            socket.id === score.socketId ? "current-player" : ""
                         }">
-                            <td class="socket-id">${score.socketId}</td>
+                            <td class="socket-id">${score.name}</td>
                             <td class="score-value">${score.score}</td>
                         </tr>
                     `;
@@ -244,7 +251,7 @@
             if (playerNotInTop10) {
                scoreTableInnerHTML += `
                         <tr class="current-player bottom">
-                            <td class="socket-id">${socket.id}</td>
+                            <td class="socket-id">${ game.players[socket.id].name}</td>
                             <td class="score-value">${
                                game.players[socket.id].score
                             }</td>
@@ -333,6 +340,10 @@
          const throttledKeydown = throttle(handleKeydown, 80);
 
          document.addEventListener("keydown", throttledKeydown);
+         function alterarNome() {
+            const nome = prompt("Qual seu nome?");
+            socket.emit("alterar-nome", nome);
+         }
 
          // ADMIN
          function startGame() {
