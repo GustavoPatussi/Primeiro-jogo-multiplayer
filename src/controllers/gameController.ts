@@ -38,7 +38,6 @@ export class CreateGame implements game {
     removePlayer(socketId: string): void {
         delete this.players[socketId];
     }
-
     movePlayer(socketId: string, direction: string): player {
         const player = this.players[socketId];
         if (direction === 'left' && player.x - 1 >= 0) {
